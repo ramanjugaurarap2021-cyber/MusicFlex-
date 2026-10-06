@@ -25,19 +25,11 @@ jobs:
           mkdir -p .musicflex-build
           unzip -q MusicFlex-Android-No-Startup.zip -d .musicflex-build
 
-      - name: Locate Android project
-        id: project
+      - name: Find Android project
         run: |
-          PROJECT_DIR=$(find .musicflex-build -type f -name "settings.gradle" -print -quit | xargs dirname)
-
-          if [ -z "$PROJECT_DIR" ]; then
-            echo "Android project not found"
-            find .musicflex-build -maxdepth 6 -type f
-            exit 1
-          fi
-
-          echo "project_dir=$PROJECT_DIR" >> "$GITHUB_OUTPUT"
-          echo "Android project: $PROJECT_DIR"
+          PROJECT_DIR=$(find .musicflex-build -type f -name settings.gradle -print -quit | xargs dirname)
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          echo "Found project at: $PROJECT_DIR"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -45,11 +37,13 @@ jobs:
           gradle-version: '8.9'
 
       - name: Build APK
-        working-directory: ${{ steps.project.outputs.project_dir }}
-        run: gradle assembleDebug --no-daemon
+        run: |
+          cd "$PROJECT_DIR"
+          gradle assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: MusicFlex-debug-apk
-          path: ${{ steps.project
+          path: .musicflex-build/**/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
