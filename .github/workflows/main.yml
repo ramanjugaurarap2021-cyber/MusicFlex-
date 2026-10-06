@@ -31,12 +31,11 @@ jobs:
 
           if [ -z "$PROJECT_DIR" ]; then
             echo "Android project not found"
-            find .musicflex-build -maxdepth 6 -type f
             exit 1
           fi
 
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
-          echo "Android project found at: $PROJECT_DIR"
+          echo "Android project: $PROJECT_DIR"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -46,4 +45,16 @@ jobs:
       - name: Build APK
         run: |
           cd "$PROJECT_DIR"
-          gradle
+          gradle assembleDebug --no-daemon
+
+      - name: Find APK
+        run: |
+          echo "Searching for APK..."
+          find .musicflex-build -type f -name "*.apk" -print
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MusicFlex-debug-apk
+          path: .musicflex-build/**/*.apk
+          if-no-files-found: error
